@@ -3,6 +3,7 @@
 package miniredis
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -613,6 +614,7 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 		key       string
 		value     int
 		cursor    int
+		count     int
 		withMatch bool
 		match     string
 	}
@@ -631,13 +633,18 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 				c.WriteError(msgSyntaxError)
 				return
 			}
-			_, err := strconv.Atoi(args[1])
+			count, err := strconv.Atoi(args[1])
 			if err != nil {
 				setDirty(c)
 				c.WriteError(msgInvalidInt)
 				return
 			}
-			// We do nothing with count.
+			if count < 0 {
+				setDirty(c)
+				c.WriteError(msgInvalidInt)
+				return
+			}
+			opts.count = count
 			args = args[2:]
 			continue
 		}
@@ -660,7 +667,6 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 	withTx(m, c, func(c *server.Peer, ctx *connCtx) {
 		db := m.db(ctx.selectedDB)
 		// return _all_ (matched) keys every time
-
 		if opts.cursor != 0 {
 			// invalid cursor
 			c.WriteLen(2)
@@ -672,17 +678,36 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 			c.WriteError(ErrWrongType.Error())
 			return
 		}
-
 		members := db.setMembers(opts.key)
 		if opts.withMatch {
 			members, _ = matchKeys(members, opts.match)
 		}
-
-		c.WriteLen(2)
-		c.WriteBulk("0") // no next cursor
-		c.WriteLen(len(members))
-		for _, k := range members {
-			c.WriteBulk(k)
+		low := opts.cursor // TODO If opts.cursor is set, what should this be? Validate that it is correct if it is set
+		// = 0
+		end := low + opts.count // 0 + opts.count ex:
+		// = 3
+		for {
+			// validate end is correct
+			if opts.count == 0 || end > len(members) {
+				end = len(members)
+			}
+			slice := members[low:end]
+			cursorValue := low + opts.count // TODO what should this be? ex: 0 + 200
+			if cursorValue > end || opts.count == 0 {
+				cursorValue = 0
+			}
+			c.WriteLen(2)
+			c.WriteBulk(fmt.Sprintf("%d", cursorValue)) // no next cursor
+			c.WriteLen(len(slice))
+			for _, k := range slice {
+				c.WriteBulk(k)
+			}
+			low = cursorValue
+			end = end + opts.count
+			if cursorValue == 0 {
+				break
+			}
 		}
+
 	})
 }

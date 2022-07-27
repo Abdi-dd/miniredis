@@ -1,6 +1,7 @@
 package miniredis
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -750,7 +751,6 @@ func TestSscan(t *testing.T) {
 	// We cheat with sscan. It always returns everything.
 
 	s.SetAdd("set", "value1", "value2")
-
 	// No problem
 	mustDo(t, c,
 		"SSCAN", "set", "0",
@@ -821,10 +821,77 @@ func TestSscan(t *testing.T) {
 			"SSCAN", "set", "0", "COUNT", "noint",
 			proto.Error(msgInvalidInt),
 		)
+		mustDo(t, c,
+			"SSCAN", "set", "0", "COUNT", "-3",
+			proto.Error(msgInvalidInt),
+		)
 		s.Set("str", "value")
 		mustDo(t, c,
 			"SSCAN", "str", "0",
 			proto.Error(msgWrongType),
 		)
 	})
+
+	s.SetAdd("largeset", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8")
+	mustDo(t, c,
+		"SSCAN", "largeset", "0", "COUNT", "3",
+		proto.Array(
+			proto.String("3"),
+			proto.Array(
+				proto.String("v1"),
+				proto.String("v2"),
+				proto.String("v3"),
+			),
+		),
+	)
+	mustDo(t, c,
+		"SSCAN", "largeset", "0", "COUNT", "3",
+		proto.Array(
+			proto.String("6"),
+			proto.Array(
+				proto.String("v4"),
+				proto.String("v5"),
+				proto.String("v6"),
+			),
+		),
+	)
+	mustDo(t, c,
+		"SSCAN", "largeset", "0", "COUNT", "3",
+		proto.Array(
+			proto.String("0"),
+			proto.Array(
+				proto.String("v7"),
+				proto.String("v8"),
+			),
+		),
+	)
+}
+
+func TestCursor(t *testing.T) {
+	values := []string{"v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10"}
+	count := 3
+	cursor := 0 //index in values
+	end := cursor + count
+	if end > len(values) {
+		end = len(values)
+	}
+	for {
+		//Make sure cursor + count is not greater then whatever is left in the slice
+		// Set a variable that is = cursor + count < len(slice)
+		slice := values[cursor:end]
+		cursor = cursor + count
+		end = cursor + count
+		if end > len(values) {
+			end = len(values)
+		}
+		fmt.Println(slice)
+		if cursor > end {
+			cursor = 0
+			break
+		}
+		fmt.Printf("The next cursor is: %d\n", cursor)
+
+	}
+	fmt.Printf("The final cursor is: %d\n", cursor)
+
 }
