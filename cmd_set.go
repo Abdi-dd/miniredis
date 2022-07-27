@@ -682,22 +682,20 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 		if opts.withMatch {
 			members, _ = matchKeys(members, opts.match)
 		}
-		low := opts.cursor // TODO If opts.cursor is set, what should this be? Validate that it is correct if it is set
-		// = 0
-		end := low + opts.count // 0 + opts.count ex:
-		// = 3
+		low := opts.cursor
+		end := low + opts.count
 		for {
 			// validate end is correct
 			if opts.count == 0 || end > len(members) {
 				end = len(members)
 			}
 			slice := members[low:end]
-			cursorValue := low + opts.count // TODO what should this be? ex: 0 + 200
+			cursorValue := low + opts.count
 			if cursorValue > end || opts.count == 0 {
-				cursorValue = 0
+				cursorValue = 0 // no next cursor
 			}
 			c.WriteLen(2)
-			c.WriteBulk(fmt.Sprintf("%d", cursorValue)) // no next cursor
+			c.WriteBulk(fmt.Sprintf("%d", cursorValue))
 			c.WriteLen(len(slice))
 			for _, k := range slice {
 				c.WriteBulk(k)

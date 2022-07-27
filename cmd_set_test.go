@@ -1,7 +1,6 @@
 package miniredis
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
@@ -865,33 +864,4 @@ func TestSscan(t *testing.T) {
 			),
 		),
 	)
-}
-
-func TestCursor(t *testing.T) {
-	values := []string{"v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10"}
-	count := 3
-	cursor := 0 //index in values
-	end := cursor + count
-	if end > len(values) {
-		end = len(values)
-	}
-	for {
-		//Make sure cursor + count is not greater then whatever is left in the slice
-		// Set a variable that is = cursor + count < len(slice)
-		slice := values[cursor:end]
-		cursor = cursor + count
-		end = cursor + count
-		if end > len(values) {
-			end = len(values)
-		}
-		fmt.Println(slice)
-		if cursor > end {
-			cursor = 0
-			break
-		}
-		fmt.Printf("The next cursor is: %d\n", cursor)
-
-	}
-	fmt.Printf("The final cursor is: %d\n", cursor)
-
 }
