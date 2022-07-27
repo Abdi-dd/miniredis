@@ -844,7 +844,7 @@ func TestSscan(t *testing.T) {
 		),
 	)
 	mustDo(t, c,
-		"SSCAN", "largeset", "0", "COUNT", "3",
+		"SSCAN", "largeset", "0",
 		proto.Array(
 			proto.String("6"),
 			proto.Array(
@@ -855,7 +855,7 @@ func TestSscan(t *testing.T) {
 		),
 	)
 	mustDo(t, c,
-		"SSCAN", "largeset", "0", "COUNT", "3",
+		"SSCAN", "largeset", "0",
 		proto.Array(
 			proto.String("0"),
 			proto.Array(
