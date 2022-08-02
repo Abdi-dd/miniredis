@@ -688,15 +688,15 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 			c.WriteLen(0)    // no elements
 			return
 		}
-		slice := members[low:end]
+		members = members[low:end]
 		cursorValue := low + opts.count
 		if cursorValue > end || opts.count == 0 {
 			cursorValue = 0 // no next cursor
 		}
 		c.WriteLen(2)
 		c.WriteBulk(fmt.Sprintf("%d", cursorValue))
-		c.WriteLen(len(slice))
-		for _, k := range slice {
+		c.WriteLen(len(members))
+		for _, k := range members {
 			c.WriteBulk(k)
 		}
 		low = cursorValue
