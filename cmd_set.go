@@ -667,13 +667,6 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 	withTx(m, c, func(c *server.Peer, ctx *connCtx) {
 		db := m.db(ctx.selectedDB)
 		// return _all_ (matched) keys every time
-		if opts.cursor != 0 {
-			// invalid cursor
-			c.WriteLen(2)
-			c.WriteBulk("0") // no next cursor
-			c.WriteLen(0)    // no elements
-			return
-		}
 		if db.exists(opts.key) && db.t(opts.key) != "set" {
 			c.WriteError(ErrWrongType.Error())
 			return
@@ -684,28 +677,23 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 		}
 		low := opts.cursor
 		end := low + opts.count
-		for {
-			// validate end is correct
-			if opts.count == 0 || end > len(members) {
-				end = len(members)
-			}
-			slice := members[low:end]
-			cursorValue := low + opts.count
-			if cursorValue > end || opts.count == 0 {
-				cursorValue = 0 // no next cursor
-			}
-			c.WriteLen(2)
-			c.WriteBulk(fmt.Sprintf("%d", cursorValue))
-			c.WriteLen(len(slice))
-			for _, k := range slice {
-				c.WriteBulk(k)
-			}
-			low = cursorValue
-			end = end + opts.count
-			if cursorValue == 0 {
-				break
-			}
+		// validate end is correct
+		if opts.count == 0 || end > len(members) {
+			end = len(members)
 		}
+		slice := members[low:end]
+		cursorValue := low + opts.count
+		if cursorValue > end || opts.count == 0 {
+			cursorValue = 0 // no next cursor
+		}
+		c.WriteLen(2)
+		c.WriteBulk(fmt.Sprintf("%d", cursorValue))
+		c.WriteLen(len(slice))
+		for _, k := range slice {
+			c.WriteBulk(k)
+		}
+		low = cursorValue
+		end = end + opts.count
 
 	})
 }
