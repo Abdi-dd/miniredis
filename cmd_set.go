@@ -681,6 +681,13 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 		if opts.count == 0 || end > len(members) {
 			end = len(members)
 		}
+		if opts.cursor > end {
+			// invalid cursor
+			c.WriteLen(2)
+			c.WriteBulk("0") // no next cursor
+			c.WriteLen(0)    // no elements
+			return
+		}
 		slice := members[low:end]
 		cursorValue := low + opts.count
 		if cursorValue > end || opts.count == 0 {

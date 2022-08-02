@@ -763,15 +763,14 @@ func TestSscan(t *testing.T) {
 	)
 
 	// Invalid cursor
-	/*
-		mustDo(t, c,
-			"SSCAN", "set", "42",
-			proto.Array(
-				proto.String("0"),
-				proto.Strings(),
-			),
-		)
-	*/
+	mustDo(t, c,
+		"SSCAN", "set", "42",
+		proto.Array(
+			proto.String("0"),
+			proto.Strings(),
+		),
+	)
+
 	// COUNT (ignored)
 	mustDo(t, c,
 		"SSCAN", "set", "0", "COUNT", "200",
