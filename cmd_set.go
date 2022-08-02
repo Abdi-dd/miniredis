@@ -634,14 +634,14 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 				return
 			}
 			count, err := strconv.Atoi(args[1])
-			if err != nil {
+			if err != nil || count < 0 {
 				setDirty(c)
 				c.WriteError(msgInvalidInt)
 				return
 			}
-			if count < 0 {
+			if count == 0 {
 				setDirty(c)
-				c.WriteError(msgInvalidInt)
+				c.WriteError(msgSyntaxError)
 				return
 			}
 			opts.count = count
@@ -678,7 +678,7 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 		low := opts.cursor
 		end := low + opts.count
 		// validate end is correct
-		if opts.count == 0 || end > len(members) {
+		if end > len(members) || end == 0 {
 			end = len(members)
 		}
 		if opts.cursor > end {
@@ -690,7 +690,7 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 		}
 		members = members[low:end]
 		cursorValue := low + opts.count
-		if cursorValue > end || opts.count == 0 {
+		if cursorValue > end {
 			cursorValue = 0 // no next cursor
 		}
 		c.WriteLen(2)

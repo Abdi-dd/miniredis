@@ -817,6 +817,10 @@ func TestSscan(t *testing.T) {
 			proto.Error(msgSyntaxError),
 		)
 		mustDo(t, c,
+			"SSCAN", "set", "0", "COUNT", "0",
+			proto.Error(msgSyntaxError),
+		)
+		mustDo(t, c,
 			"SSCAN", "set", "0", "COUNT", "noint",
 			proto.Error(msgInvalidInt),
 		)
