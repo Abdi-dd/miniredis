@@ -676,31 +676,29 @@ func (m *Miniredis) cmdSscan(c *server.Peer, cmd string, args []string) {
 			members, _ = matchKeys(members, opts.match)
 		}
 		low := opts.cursor
-		end := low + opts.count
-		// validate end is correct
-		if end > len(members) || end == 0 {
-			end = len(members)
+		high := low + opts.count
+		// validate high is correct
+		if high > len(members) || high == 0 {
+			high = len(members)
 		}
-		if opts.cursor > end {
+		if opts.cursor > high {
 			// invalid cursor
 			c.WriteLen(2)
 			c.WriteBulk("0") // no next cursor
 			c.WriteLen(0)    // no elements
 			return
 		}
-		members = members[low:end]
 		cursorValue := low + opts.count
-		if cursorValue > end {
+		if cursorValue > len(members) {
 			cursorValue = 0 // no next cursor
 		}
+		members = members[low:high]
 		c.WriteLen(2)
 		c.WriteBulk(fmt.Sprintf("%d", cursorValue))
 		c.WriteLen(len(members))
 		for _, k := range members {
 			c.WriteBulk(k)
 		}
-		low = cursorValue
-		end = end + opts.count
 
 	})
 }
